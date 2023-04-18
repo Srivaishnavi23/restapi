@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Candy Shop</title>
+	<style>
+		table {
+			border-collapse: collapse;
+		}
+		th, td {
+			padding: 8px;
+			text-align: left;
+			border-bottom: 1px solid #ddd;
+		}
+		form {
+			margin-top: 16px;
+		}
+		form input[type="submit"] {
+			background-color: #4CAF50;
+			color: white;
+			padding: 12px 20px;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+		}
+		form input[type="submit"]:hover {
+			background-color: #45a049;
+		}
+	</style>
+</head>
+<body>
+	<h1>Candy Shop</h1>
+	<table id="candy-table">
+		<thead>
+			<tr>
+				<th>Name</th>
+				<th>Description</th>
+				<th>Price</th>
+				<th>Quantity</th>
+				<th></th>
+				<th></th>
+				<th></th>
+			</tr>
+		</thead>
+		<tbody>
+		</tbody>
+	</table>
+	<form id="candy-form">
+		<h2>Add Candy</h2>
+		<label for="candy-name">Name:</label>
+		<input type="text" id="candy-name" name="candy_name" required>
+		<label for="description">Description:</label>
+		<input type="text" id="description" name="description" required>
+		<label for="price">Price:</label>
+		<input type="number" id="price" name="price" step="0.01" min="0" required>
+		<label for="quantity">Quantity:</label>
+		<input type="number" id="quantity" name="quantity" min="1" required>
+		<input type="submit" value="Add Item">
+	</form>
+	<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+	<script>
+		var candyTable = document.querySelector("#candy-table tbody");
+		var candyForm = document.querySelector("#candy-form");
+		var candyItems = [];
+
+		// Function to render the table with candy items
+		function renderTable() {
+			candyTable.innerHTML = "";
+			candyItems.forEach(function(candy) {
+				var row = document.createElement("tr");
+				row.dataset.id = candy.id;
+
+				var nameCell = document.createElement("td");
+				nameCell.textContent = candy.candy_name;
+				row.appendChild(nameCell);
+
+				var descCell = document.createElement("td");
+				descCell.textContent = candy.description;
+				row.appendChild(descCell);
+
+				var priceCell = document.createElement("td");
+				priceCell.textContent = "$" + candy.price.toFixed(2);
+				row.appendChild(priceCell);
+
+				var qtyCell = document.createElement("td");
+				qtyCell.textContent = candy.quantity;
+				row.appendChild(qtyCell);
+
+				var buy1Cell = document.createElement("td");
+				var buy1Btn = document.createElement("button");
+				buy1Btn.classList.add("buy-btn");
+				buy1Btn.dataset.quantity = 1;
+				buy1Btn.textContent = "Buy 1";
+				buy1Cell.appendChild(buy1Btn);
+				row.appendChild(buy1Cell);
+
+				var buy2Cell = document.createElement("td");
+				var buy2Btn = document.createElement("button");
+								buy2Btn.classList.add("buy-btn");
+				buy2Btn.dataset.quantity = 2;
+				buy2Btn.textContent = "Buy 2";
+				buy2Cell.appendChild(buy2Btn);
+				row.appendChild(buy2Cell);
+
+				var buy3Cell = document.createElement("td");
+				var buy3Btn = document.createElement("button");
+				buy3Btn.classList.add("buy-btn");
+				buy3Btn.dataset.quantity = 3;
+				buy3Btn.textContent = "Buy 3";
+				buy3Cell.appendChild(buy3Btn);
+				row.appendChild(buy3Cell);
+
+				candyTable.appendChild(row);
+			});
+		}
+
+		// Function to handle the form submission
+		function handleFormSubmit(event) {
+			event.preventDefault();
+
+			// Get the form data
+			var formData = new FormData(candyForm);
+			var candyData = {
+				candy_name: formData.get("candy_name"),
+				description: formData.get("description"),
+				price: parseFloat(formData.get("price")),
+				quantity: parseInt(formData.get("quantity"))
+			};
+
+			// Send a POST request to create a new candy item
+			axios.post("https://crudcrud.com/api/8de885c6269c4c24a1819fa60d4ecf1b/candy", candyData)
+				.then(function(response) {
+					candyData.id = response.data._id;
+					candyItems.push(candyData);
+					renderTable();
+					candyForm.reset();
+				})
+				.catch(function(error) {
+					console.error(error);
+				});
+		}
+
+		// Function to handle the buy button click
+		function handleBuyClick(event) {
+			var candyId = event.target.closest("tr").dataset.id;
+			var candy = candyItems.find(function(candy) {
+				return candy.id === candyId;
+			});
+			var quantity = parseInt(event.target.dataset.quantity);
+
+			if (candy.quantity >= quantity) {
+				candy.quantity -= quantity;
+
+				// Send a DELETE request to update the candy item quantity
+				axios.delete("https://crudcrud.com/api/8de885c6269c4c24a1819fa60d4ecf1b/candy/643ed36d6246ac03e8534071" + candyId)
+					.then(function(response) {
+						renderTable();
+					})
+					.catch(function(error) {
+						console.error(error);
+					});
+			}
+		}
+
+		// Send a GET request to fetch the candy items
+		axios.get("https://crudcrud.com/api/8de885c6269c4c24a1819fa60d4ecf1b/candy")
+			.then(function(response) {
+				candyItems = response.data;
+				renderTable();
+			})
+			.catch(function(error) {
+				console.error(error);
+			});
+
+		// Add event listeners
+		candyForm.addEventListener("submit", handleFormSubmit);
+		candyTable.addEventListener("click", function(event) {
+			if (event.target.classList.contains("buy-btn")) {
+				handleBuyClick(event);
+			}
+		});
+	</script>
+</body>
+</html>
+
